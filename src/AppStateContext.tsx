@@ -5,6 +5,8 @@ import {
   findItemIndexByID,
   overrideItemAtIndex,
   moveItem,
+  removeItemAtIndex,
+  insertItemAtIndex,
 } from "./utils/arrayUtils";
 
 interface Task {
@@ -42,6 +44,15 @@ type Action =
   | {
       type: "SET_DRAGGED_ITEM";
       payload: DragItem | undefined;
+    }
+  | {
+      type: "MOVE_TASK";
+      payload: {
+        dragIndex: number;
+        hoverIndex: number;
+        sourceColumn: string;
+        targetColumn: string;
+      };
     };
 
 const appData: AppState = {
@@ -110,10 +121,48 @@ const appStateReducer = (state: AppState, action: Action) => {
 
     case "MOVE_LIST": {
       const { dragIndex, hoverIndex } = action.payload;
-
+      const lists = moveItem(state.lists, dragIndex, hoverIndex);
       return {
         ...state,
-        lists: moveItem(state.lists, dragIndex, hoverIndex),
+        lists,
+      };
+    }
+
+    case "MOVE_TASK": {
+      const { dragIndex, hoverIndex, sourceColumn, targetColumn } =
+        action.payload;
+
+      const sourceListIndex = findItemIndexByID(state.lists, sourceColumn);
+      const targetListIndex = findItemIndexByID(state.lists, targetColumn);
+
+      const sourceList = state.lists[sourceListIndex];
+      const task = sourceList.tasks[dragIndex];
+      const updatedSourceList = {
+        ...sourceList,
+        tasks: removeItemAtIndex(sourceList.tasks, dragIndex),
+      };
+
+      const stateWithUpdatedSourceList = {
+        ...state,
+        lists: overrideItemAtIndex(
+          state.lists,
+          updatedSourceList,
+          sourceListIndex
+        ),
+      };
+      const targetList = stateWithUpdatedSourceList.lists[targetListIndex];
+
+      const updatedTargetList = {
+        ...targetList,
+        tasks: insertItemAtIndex(targetList.tasks, task, hoverIndex),
+      };
+      return {
+        ...stateWithUpdatedSourceList,
+        lists: overrideItemAtIndex(
+          stateWithUpdatedSourceList.lists,
+          updatedTargetList,
+          targetListIndex
+        ),
       };
     }
 

@@ -18,5 +18,5 @@ export function removeItemAtIndex<T>(array: T[], index: number) {
 }
 
 export function insertItemAtIndex<T>(array: T[], item: T, to: number) {
-  return array.splice(to, 0, item);
+  return [...array.slice(0, to), item, ...array.slice(to)];
 }
